@@ -1,5 +1,6 @@
 import tableauserverclient as TSC
 import getpass # For securely prompting password
+import requests.exceptions # Import the exceptions from the requests library
 
 def test_tableau_server_access():
     """
@@ -71,7 +72,7 @@ def test_tableau_server_access():
                 for i, workbook in enumerate(TSC.Pager(server.workbooks.get())):
                     print(f"  - [{i+1}] Name: {workbook.name}, Project: {workbook.project_name}, ID: {workbook.id}")
                     workbooks_count += 1
-                    if workbooks_count >= 10: # List first 10 workbooks
+                    if workbooks_count >= 10: # Limit for testing
                         print("  (Displaying only first 10 workbooks...)")
                         break
                 if workbooks_count == 0:
@@ -83,19 +84,22 @@ def test_tableau_server_access():
 
         print("\nSuccessfully signed out from Tableau Server.")
 
-    except TSC.MissingRequiredFieldError as e:
-        print(f"\nConfiguration Error: {e}. Please ensure all required fields are provided.")
-    except TSC.ServerConnectionError as e:
+    except requests.exceptions.ConnectionError as e:
         print(f"\nConnection Error: Could not connect to Tableau Server at '{tableau_server_url}'.")
-        print(f"Please check the URL and your network connection. Error details: {e}")
+        print(f"Please check the URL, your network connection, or proxy settings. Error details: {e}")
+    except TSC.MissingRequiredFieldError as e:
+        print(f"\nConfiguration Error: {e}. Please ensure all required fields are provided (URL, Username, Password).")
     except TSC.EndpointUnavailableError as e:
-        print(f"\nAPI Endpoint Unavailable: {e}. This might indicate an issue with the server or incorrect URL/API version.")
+        print(f"\nAPI Endpoint Unavailable: {e}. The server might be reachable but the API endpoint is not responsive or your server version is too old/new for the current TSC library version.")
     except TSC.UnauthenticatedError:
         print("\nAuthentication Failed: Invalid username, password, or site ID. Please check your credentials.")
+    except TSC.ServerError as e:
+        print(f"\nTableau Server API Error: {e}. This is a general error from the Tableau Server itself (e.g., permission denied for an action).")
     except Exception as e:
-        print(f"\nAn unexpected error occurred during sign-in or API interaction: {e}")
+        print(f"\nAn unexpected error occurred: {type(e).__name__}: {e}")
 
     print("\n--- Test Finished ---")
 
 if __name__ == "__main__":
     test_tableau_server_access()
+    
